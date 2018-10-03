@@ -7,7 +7,7 @@ var React = require("react");
         <head />
         <body>
           <ul>
-            {this.props.pokemons.map(pokemon => (
+            {this.props.pokemon.map(pokemon => (
               <li>
                 Grabbed pokemon: {pokemon.name}
               </li>

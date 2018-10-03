@@ -173,7 +173,17 @@ const addCatchedPokemon = (request, response) => {
     })
 };
 
+const showUsers = (request, response) => {
 
+  const text = 'SELECT pokemon.id, pokemon.name FROM pokemon INNER JOIN user_pokemons ON user_pokemons.pokemon_id = pokemon.id WHERE user_pokemons.user_id = '+request.params.id+'';
+  pool.query(text, (err, result) => {
+    if (err) {
+      console.error('wtf');
+    } else {
+      response.render('users/users_poks', { pokemons });
+    }
+  });
+};
 
 
 const userNew = (request, response) => {
@@ -224,9 +234,10 @@ app.put('/pokemon/:id', updatePokemon);
 app.delete('/pokemon/:id', deletePokemon);
 
 // TODO: New routes for creating users
-
 app.get('/users/new', userNew);
 app.post('/users', userCreate);
+app.get('/users/:id', showUsers);
+
 
 // routes for users_pokemons
 app.get ('/users/catchPokemon', catchPokemon);

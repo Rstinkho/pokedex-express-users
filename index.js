@@ -11,6 +11,7 @@
 const express = require('express');
 const methodOverride = require('method-override');
 const pg = require('pg');
+var sha256 = require('js-sha256');
 
 // Initialise postgres client
 const config = {
@@ -180,7 +181,7 @@ const showUsers = (request, response) => {
     if (err) {
       console.error('wtf');
     } else {
-      response.render('users/users_poks', { pokemons });
+      response.render('users/users_poks', {pokemon: result.rows});
     }
   });
 };
@@ -190,26 +191,25 @@ const userNew = (request, response) => {
   response.render('users/new');
 }
 
-const userCreate = (request, response) => {
+const showCreatedUser = (request, response) => {
 
-  const queryString = 'INSERT INTO users (name) VALUES ($1)';
+  const queryString = 'INSERT INTO user_pokemons ( user_name, user_password ) VALUES ($1, $2)';
 
-  const values = [request.body.name];
+  var hashedValue = sha256(request.body.user_password);
 
-  console.log(queryString);
+  const values = [request.body.user_name, hashedValue];
 
   pool.query(queryString, values, (err, result) => {
 
     if (err) {
+      response.send('wtf');
 
-      console.error('Query error:', err.stack);
-      response.send('dang it.');
     } else {
 
       console.log('Query result:', result);
 
       // redirect to home page
-      response.redirect('/');
+      response.send('New user has been created:' +request.body.user_name);
     }
   });
 }
@@ -222,6 +222,9 @@ const userCreate = (request, response) => {
 
 app.get('/', getRoot);
 
+app.get ('/users/catchPokemon', catchPokemon);
+app.post ('/users/addPokemonSuccess', addCatchedPokemon);
+
 app.get('/pokemon/:id/edit', editPokemonForm);
 app.get('/pokemon/new', getNew);
 app.get('/pokemon/:id', getPokemon);
@@ -233,15 +236,18 @@ app.put('/pokemon/:id', updatePokemon);
 
 app.delete('/pokemon/:id', deletePokemon);
 
-// TODO: New routes for creating users
+// EVERYTHING ABOUT USERS, LOGINS and INTERACTION USERS WITH POKEMONS (catch Pokemon)
+app.get ('/users/catchPokemon', catchPokemon);
+app.post ('/users/addPokemonSuccess', addCatchedPokemon);
+
 app.get('/users/new', userNew);
-app.post('/users', userCreate);
+app.post('/users', showCreatedUser);
+
 app.get('/users/:id', showUsers);
 
 
 // routes for users_pokemons
-app.get ('/users/catchPokemon', catchPokemon);
-app.post ('/users/addPokemonSuccess', addCatchedPokemon);
+
 
 /**
  * ===================================

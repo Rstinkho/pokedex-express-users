@@ -12,6 +12,9 @@ const express = require('express');
 const methodOverride = require('method-override');
 const pg = require('pg');
 var sha256 = require('js-sha256');
+const cookieParser = require('cookie-parser');
+const app = express();
+app.use(cookieParser());
 
 // Initialise postgres client
 const config = {
@@ -38,7 +41,7 @@ pool.on('error', function (err) {
  */
 
 // Init express app
-const app = express();
+
 
 app.use(express.urlencoded({ extended: true }));
 app.use(methodOverride('_method'));
@@ -162,8 +165,8 @@ const catchPokemon = (request, response) => {
 }
 
 const addCatchedPokemon = (request, response) => {
-   const text = 'INSERT INTO user_pokemons (user_id, pokemon_id) VALUES ($1, $2)';
-   const values = [request.body.user_id, request.body.pokemon_id];
+   const text = 'UPDATE user_pokemons SET pokemon_id = $1  WHERE id= $2';
+   const values = [request.body.pokemon_id, request.body.user_id ];
 
     pool.query(text, values, (err, result) => {
         if (err) {
@@ -176,7 +179,7 @@ const addCatchedPokemon = (request, response) => {
 
 const showUsers = (request, response) => {
 
-  const text = 'SELECT pokemon.id, pokemon.name FROM pokemon INNER JOIN user_pokemons ON user_pokemons.pokemon_id = pokemon.id WHERE user_pokemons.user_id = '+request.params.id+'';
+  const text = 'SELECT pokemon.id, pokemon.name FROM pokemon INNER JOIN user_pokemons ON user_pokemons.pokemon_id = pokemon.id WHERE user_pokemons.id = '+request.params.id+'';
   pool.query(text, (err, result) => {
     if (err) {
       console.error('wtf');
@@ -186,6 +189,9 @@ const showUsers = (request, response) => {
   });
 };
 
+const login = (request, response) => {
+    response.render('users/login')
+}
 
 const userNew = (request, response) => {
   response.render('users/new');
@@ -211,8 +217,41 @@ const showCreatedUser = (request, response) => {
       // redirect to home page
       response.send('New user has been created:' +request.body.user_name);
     }
-  });
-}
+  })
+};
+
+     const  loginPost = (request, response) => {
+
+            let sqlText = "SELECT * FROM user_pokemons WHERE user_name='"+request.body.user_name+"'";
+
+            pool.query(sqlText, (error, queryResult) => {
+              if (error){
+                console.log('error!', error);
+                response.status(500).send('DIDNT WORKS!!');
+              }else{
+
+                const user = queryResult.rows[0];
+                console.log( user.user_name );
+
+                var hashedValue = sha256(request.body.user_password);
+               // console.log(user.user_password);
+               // console.log(user.user_name )
+               // console.log("input: ", hashedValue );
+                if( user.user_password === hashedValue &&  user.user_name === request.body.user_name ){
+
+                   // response.cookie('loggedin', 'true');
+                    response.cookie('loggedin', true);
+                    response.send(request.body.user_name + ' successfully login');
+
+                }else{
+
+                    response.send('wtf');
+
+                }
+              }
+            })
+        };
+
 
 /**
  * ===================================
@@ -244,6 +283,9 @@ app.get('/users/new', userNew);
 app.post('/users', showCreatedUser);
 
 app.get('/users/:id', showUsers);
+
+app.get('/login', login)
+app.post('/login', loginPost)
 
 
 // routes for users_pokemons

@@ -15,6 +15,7 @@ var sha256 = require('js-sha256');
 const cookieParser = require('cookie-parser');
 const app = express();
 app.use(cookieParser());
+const CHOKCHIPS = "chips for cookies";
 
 // Initialise postgres client
 const config = {
@@ -231,7 +232,7 @@ const showCreatedUser = (request, response) => {
               }else{
 
                 const user = queryResult.rows[0];
-                console.log( user.user_name );
+                console.log( user.id);
 
                 var hashedValue = sha256(request.body.user_password);
                // console.log(user.user_password);
@@ -239,9 +240,12 @@ const showCreatedUser = (request, response) => {
                // console.log("input: ", hashedValue );
                 if( user.user_password === hashedValue &&  user.user_name === request.body.user_name ){
 
-                   // response.cookie('loggedin', 'true');
-                    response.cookie('loggedin', true);
+                    let currentSessionCookie = sha256( user.id + CHOKCHIPS );
+                    response.cookie('loggedin', currentSessionCookie);
+
                     response.send(request.body.user_name + ' successfully login');
+
+
 
                 }else{
 
